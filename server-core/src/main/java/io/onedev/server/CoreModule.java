@@ -82,7 +82,6 @@ import io.onedev.server.attachment.DefaultAttachmentService;
 import io.onedev.server.buildspec.job.log.instruction.LogInstruction;
 import io.onedev.server.cluster.ClusterResource;
 import io.onedev.server.cluster.ClusterService;
-import io.onedev.server.cluster.impl.DefaultClusterService;
 import io.onedev.server.codequality.CodeProblemContribution;
 import io.onedev.server.codequality.LineCoverageContribution;
 import io.onedev.server.commandhandler.ApplyDatabaseConstraints;
@@ -444,7 +443,6 @@ public class CoreModule extends AbstractPluginModule {
 
 		bind(ListenerRegistry.class).to(DefaultListenerRegistry.class);
 		bind(JettyService.class).to(DefaultJettyService.class);
-		bind(ClusterService.class).to(DefaultClusterService.class);
 		bind(ObjectMapper.class).toProvider(ObjectMapperProvider.class).in(Singleton.class);
 
 		bind(ValidatorFactory.class).toProvider(() -> {
