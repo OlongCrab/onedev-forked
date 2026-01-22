@@ -81,6 +81,8 @@ import io.onedev.server.attachment.AttachmentService;
 import io.onedev.server.attachment.DefaultAttachmentService;
 import io.onedev.server.buildspec.job.log.instruction.LogInstruction;
 import io.onedev.server.cluster.ClusterResource;
+import io.onedev.server.cluster.ClusterService;
+import io.onedev.server.cluster.impl.DefaultClusterService;
 import io.onedev.server.codequality.CodeProblemContribution;
 import io.onedev.server.codequality.LineCoverageContribution;
 import io.onedev.server.commandhandler.ApplyDatabaseConstraints;
@@ -430,7 +432,8 @@ import io.onedev.server.xodus.VisitInfoService;
 import nl.altindag.ssl.SSLFactory;
 
 /**
- * NOTE: Do not forget to rename moduleClass property defined in the pom if you've renamed this class.
+ * NOTE: Do not forget to rename moduleClass property defined in the pom if
+ * you've renamed this class.
  *
  */
 public class CoreModule extends AbstractPluginModule {
@@ -438,12 +441,12 @@ public class CoreModule extends AbstractPluginModule {
 	@Override
 	protected void configure() {
 		super.configure();
-		
+
 		bind(ListenerRegistry.class).to(DefaultListenerRegistry.class);
 		bind(JettyService.class).to(DefaultJettyService.class);
-		
+		bind(ClusterService.class).to(DefaultClusterService.class);
 		bind(ObjectMapper.class).toProvider(ObjectMapperProvider.class).in(Singleton.class);
-		
+
 		bind(ValidatorFactory.class).toProvider(() -> {
 			Configuration<?> configuration = Validation
 					.byDefaultProvider()
@@ -463,17 +466,17 @@ public class CoreModule extends AbstractPluginModule {
 								Class<?> rootBeanType, Path pathToTraversableObject, ElementType elementType) {
 							return true;
 						}
-	
+
 						@Override
 						public boolean isCascadable(Object traversableObject, Node traversableProperty,
 								Class<?> rootBeanType, Path pathToTraversableObject, ElementType elementType) {
 							return false;
 						}
-					})					
+					})
 					.messageInterpolator(new MessageInterpolator());
 			return configuration.buildValidatorFactory();
 		}).in(Singleton.class);
-		
+
 		bind(Validator.class).toProvider(ValidatorProvider.class).in(Singleton.class);
 		bind(Validator.class).annotatedWith(Shallow.class).toProvider(ShallowValidatorProvider.class).in(Singleton.class);
 
@@ -486,7 +489,7 @@ public class CoreModule extends AbstractPluginModule {
 
 		/*
 		 * Declare bindings explicitly instead of using ImplementedBy annotation as
-		 * HK2 to guice bridge can only search in explicit bindings in Guice   
+		 * HK2 to guice bridge can only search in explicit bindings in Guice
 		 */
 		bind(SshAuthenticator.class).to(DefaultSshAuthenticator.class);
 		bind(SshService.class).to(DefaultSshService.class);
@@ -598,11 +601,11 @@ public class CoreModule extends AbstractPluginModule {
 		bind(GroupEntitlementService.class).to(DefaultGroupEntitlementService.class);
 		bind(UserEntitlementService.class).to(DefaultUserEntitlementService.class);
 		bind(ProjectEntitlementService.class).to(DefaultProjectEntitlementService.class);
-		
+
 		bind(WebHookManager.class);
-		
+
 		contribute(CodePullAuthorizationSource.class, DefaultJobService.class);
-        
+
 		bind(CodeIndexService.class).to(DefaultCodeIndexService.class);
 		bind(CodeSearchService.class).to(DefaultCodeSearchService.class);
 
@@ -620,16 +623,16 @@ public class CoreModule extends AbstractPluginModule {
 				}
 			}
 
-        };
+		};
 
-	    bind(ExecutorService.class).toProvider(() -> Bootstrap.executorService).in(Singleton.class);
-	    
-	    bind(OsInfo.class).toProvider(() -> ExecutorUtils.getOsInfo()).in(Singleton.class);
-	    
-	    contributeFromPackage(LogInstruction.class, LogInstruction.class);	    
-	    
+		bind(ExecutorService.class).toProvider(() -> Bootstrap.executorService).in(Singleton.class);
+
+		bind(OsInfo.class).toProvider(() -> ExecutorUtils.getOsInfo()).in(Singleton.class);
+
+		contributeFromPackage(LogInstruction.class, LogInstruction.class);
+
 		contribute(CodeProblemContribution.class, (build, blobPath, reportName) -> newArrayList());
-	    
+
 		contribute(LineCoverageContribution.class, (build, blobPath, reportName) -> new HashMap<>());
 		contribute(AdministrationSettingContribution.class, () -> new ArrayList<>());
 		contribute(ProjectSettingContribution.class, () -> new ArrayList<>());
@@ -637,7 +640,7 @@ public class CoreModule extends AbstractPluginModule {
 
 		bind(PackFilter.class);
 	}
-	
+
 	private void configureSecurity() {
 		bind(AuthenticatingService.class).to(DefaultAuthenticatingService.class);
 		bind(AuthorizingService.class).to(DefaultAuthorizingService.class);
@@ -653,16 +656,17 @@ public class CoreModule extends AbstractPluginModule {
 		bind(PasswordService.class).to(DefaultPasswordService.class);
 		bind(ShiroFilter.class);
 		install(new ShiroAopModule());
-        contribute(FilterChainConfigurator.class, filterChainManager -> {
+		contribute(FilterChainConfigurator.class, filterChainManager -> {
 			filterChainManager.createChain("/**/info/refs", "noSessionCreation, authcBasic, authcBearer");
 			filterChainManager.createChain("/**/git-upload-pack", "noSessionCreation, authcBasic, authcBearer");
 			filterChainManager.createChain("/**/git-receive-pack", "noSessionCreation, authcBasic, authcBearer");
 		});
-        contributeFromPackage(Authenticator.class, Authenticator.class);
-		
-		bind(SSLFactory.class).toProvider(() -> KubernetesHelper.buildSSLFactory(Bootstrap.getTrustCertsDir())).in(Singleton.class);
+		contributeFromPackage(Authenticator.class, Authenticator.class);
+
+		bind(SSLFactory.class).toProvider(() -> KubernetesHelper.buildSSLFactory(Bootstrap.getTrustCertsDir()))
+				.in(Singleton.class);
 	}
-	
+
 	private void configureGit() {
 		contribute(ObjectMapperConfigurator.class, GitObjectMapperConfigurator.class);
 		bind(GitService.class).to(DefaultGitService.class);
@@ -676,13 +680,15 @@ public class CoreModule extends AbstractPluginModule {
 		contribute(CommandCreator.class, SshCommandCreator.class);
 		contributeFromPackage(SignatureVerifier.class, SignatureVerifier.class);
 	}
-	
+
 	private void configureRestful() {
 		bind(ResourceConfig.class).toProvider(ResourceConfigProvider.class).in(Singleton.class);
 		bind(ServletContainer.class).to(DefaultServletContainer.class);
-		
-		contribute(FilterChainConfigurator.class, filterChainManager -> filterChainManager.createChain("/~api/**", "noSessionCreation, authcBasic, authcBearer"));
-		contribute(JerseyConfigurator.class, resourceConfig -> resourceConfig.packages(ProjectResource.class.getPackage().getName()));
+
+		contribute(FilterChainConfigurator.class,
+				filterChainManager -> filterChainManager.createChain("/~api/**", "noSessionCreation, authcBasic, authcBearer"));
+		contribute(JerseyConfigurator.class,
+				resourceConfig -> resourceConfig.packages(ProjectResource.class.getPackage().getName()));
 		contribute(JerseyConfigurator.class, resourceConfig -> resourceConfig.register(ClusterResource.class));
 		contribute(JerseyConfigurator.class, resourceConfig -> resourceConfig.register(McpHelperResource.class));
 		contribute(JerseyConfigurator.class, resourceConfig -> resourceConfig.register(BuildSpecSchemaResource.class));
@@ -696,33 +702,33 @@ public class CoreModule extends AbstractPluginModule {
 		bind(SessionDataStoreFactory.class).to(DefaultSessionDataStoreFactory.class);
 
 		contributeFromPackage(EditSupport.class, EditSupport.class);
-		
+
 		bind(org.apache.wicket.protocol.http.WebApplication.class).to(WebApplication.class);
 		bind(Application.class).to(WebApplication.class);
 		bind(AvatarService.class).to(DefaultAvatarService.class);
 		bind(WebSocketService.class).to(DefaultWebSocketService.class);
-		
+
 		contributeFromPackage(EditSupport.class, EditSupportLocator.class);
-				
+
 		bind(CommitIndexedBroadcaster.class);
-		
+
 		contributeFromPackage(DiffRenderer.class, DiffRenderer.class);
 		contributeFromPackage(BlobRenderer.class, BlobRenderer.class);
 
 		contribute(Extension.class, new EmojiExtension());
 		contribute(Extension.class, new SourcePositionTrackExtension());
-		
+
 		contributeFromPackage(HtmlProcessor.class, HtmlProcessor.class);
 
 		contribute(ResourcePackScopeContribution.class, () -> newArrayList(WebApplication.class));
-		
+
 		contributeFromPackage(ExceptionHandler.class, ExceptionHandler.class);
 		contributeFromPackage(ExceptionHandler.class, ConstraintViolationExceptionHandler.class);
 		contributeFromPackage(ExceptionHandler.class, PageExpiredExceptionHandler.class);
 		contributeFromPackage(ExceptionHandler.class, WebApplicationExceptionHandler.class);
 
 		contribute(SessionListener.class, DefaultWebSocketService.class);
-		
+
 		bind(UrlService.class).to(DefaultUrlService.class);
 		bind(CodeCommentEventBroadcaster.class);
 		bind(PullRequestEventBroadcaster.class);
@@ -730,17 +736,17 @@ public class CoreModule extends AbstractPluginModule {
 		bind(BuildEventBroadcaster.class);
 		bind(AlertEventBroadcaster.class);
 		bind(UploadService.class).to(DefaultUploadService.class);
-		
+
 		bind(TaskFutureService.class).to(DefaultTaskFutureService.class);
 		bind(ManagedFutureService.class).to(DefaultManagedFutureService.class);
 	}
-	
+
 	private void configureBuild() {
 		bind(ResourceAllocator.class).to(DefaultResourceAllocator.class);
 		bind(AgentService.class).to(DefaultAgentService.class);
 		bind(AgentTokenService.class).to(DefaultAgentTokenService.class);
 		bind(AgentAttributeService.class).to(DefaultAgentAttributeService.class);
-		
+
 		contribute(ScriptContribution.class, new ScriptContribution() {
 
 			@Override
@@ -750,7 +756,7 @@ public class CoreModule extends AbstractPluginModule {
 				script.setContent(newArrayList("io.onedev.server.util.ScriptContribution.determineBuildFailureInvestigator()"));
 				return script;
 			}
-			
+
 		});
 		contribute(ScriptContribution.class, new ScriptContribution() {
 
@@ -761,7 +767,7 @@ public class CoreModule extends AbstractPluginModule {
 				script.setContent(newArrayList("io.onedev.server.util.ScriptContribution.getBuildNumber()"));
 				return script;
 			}
-			
+
 		});
 		contribute(ScriptContribution.class, new ScriptContribution() {
 
@@ -775,77 +781,77 @@ public class CoreModule extends AbstractPluginModule {
 
 		});
 	}
-	
+
 	private void configurePersistence() {
 		bind(DataService.class).to(DefaultDataService.class);
-		
+
 		bind(Session.class).toProvider(SessionProvider.class);
 		bind(EntityManager.class).toProvider(SessionProvider.class);
 		bind(SessionFactory.class).toProvider(SessionFactoryProvider.class);
 		bind(EntityManagerFactory.class).toProvider(SessionFactoryProvider.class);
 		bind(SessionFactoryService.class).to(DefaultSessionFactoryService.class);
-		
-	    contribute(ObjectMapperConfigurator.class, HibernateObjectMapperConfigurator.class);
-	    
+
+		contribute(ObjectMapperConfigurator.class, HibernateObjectMapperConfigurator.class);
+
 		bind(Interceptor.class).to(HibernateInterceptor.class);
 		bind(PhysicalNamingStrategy.class).toInstance(new PrefixedNamingStrategy("o_"));
-		
+
 		bind(SessionService.class).to(DefaultSessionService.class);
 		bind(TransactionService.class).to(DefaultTransactionService.class);
 		bind(IdService.class).to(DefaultIdService.class);
 		bind(Dao.class).to(DefaultDao.class);
-		
-	    TransactionInterceptor transactionInterceptor = new TransactionInterceptor();
-	    requestInjection(transactionInterceptor);
-	    
-	    bindInterceptor(Matchers.any(), new AbstractMatcher<AnnotatedElement>() {
+
+		TransactionInterceptor transactionInterceptor = new TransactionInterceptor();
+		requestInjection(transactionInterceptor);
+
+		bindInterceptor(Matchers.any(), new AbstractMatcher<AnnotatedElement>() {
 
 			@Override
 			public boolean matches(AnnotatedElement element) {
 				return element.isAnnotationPresent(Transactional.class) && !((Method) element).isSynthetic();
 			}
-	    	
-	    }, transactionInterceptor);
-	    
-	    SessionInterceptor sessionInterceptor = new SessionInterceptor();
-	    requestInjection(sessionInterceptor);
-	    
-	    bindInterceptor(Matchers.any(), new AbstractMatcher<AnnotatedElement>() {
+
+		}, transactionInterceptor);
+
+		SessionInterceptor sessionInterceptor = new SessionInterceptor();
+		requestInjection(sessionInterceptor);
+
+		bindInterceptor(Matchers.any(), new AbstractMatcher<AnnotatedElement>() {
 
 			@Override
 			public boolean matches(AnnotatedElement element) {
 				return element.isAnnotationPresent(Sessional.class) && !((Method) element).isSynthetic();
 			}
-	    	
-	    }, sessionInterceptor);
-	    
-	    contribute(PersistListener.class, new PersistListener() {
-			
+
+		}, sessionInterceptor);
+
+		contribute(PersistListener.class, new PersistListener() {
+
 			@Override
 			public boolean onSave(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types)
 					throws CallbackException {
 				return false;
 			}
-			
+
 			@Override
 			public boolean onLoad(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types)
 					throws CallbackException {
 				return false;
 			}
-			
+
 			@Override
 			public boolean onFlushDirty(Object entity, Serializable id, Object[] currentState, Object[] previousState,
 					String[] propertyNames, Type[] types) throws CallbackException {
 				return false;
 			}
-			
+
 			@Override
 			public void onDelete(Object entity, Serializable id, Object[] state, String[] propertyNames, Type[] types)
 					throws CallbackException {
 			}
 
 		});
-	    
+
 		bind(XStream.class).toProvider(new com.google.inject.Provider<XStream>() {
 
 			@SuppressWarnings("rawtypes")
@@ -857,18 +863,18 @@ public class CoreModule extends AbstractPluginModule {
 					@Override
 					protected MapperWrapper wrapMapper(MapperWrapper next) {
 						return new MapperWrapper(next) {
-							
+
 							@Override
 							public boolean shouldSerializeMember(Class definedIn, String fieldName) {
 								Field field = reflectionProvider.getField(definedIn, fieldName);
-								
-								return field.getAnnotation(XStreamOmitField.class) == null 
-										&& field.getAnnotation(Transient.class) == null 
-										&& field.getAnnotation(OneToMany.class) == null 
-										&& (field.getAnnotation(OneToOne.class) == null || field.getAnnotation(JoinColumn.class) != null)  
+
+								return field.getAnnotation(XStreamOmitField.class) == null
+										&& field.getAnnotation(Transient.class) == null
+										&& field.getAnnotation(OneToMany.class) == null
+										&& (field.getAnnotation(OneToOne.class) == null || field.getAnnotation(JoinColumn.class) != null)
 										&& field.getAnnotation(Version.class) == null;
 							}
-							
+
 							@Override
 							public String serializedClass(Class type) {
 								if (type == null)
@@ -880,14 +886,14 @@ public class CoreModule extends AbstractPluginModule {
 								else
 									return super.serializedClass(type);
 							}
-							
+
 						};
 					}
-					
+
 				};
-				xstream.allowTypesByWildcard(new String[] {"**"});				
-				
-				// register NullConverter as highest; otherwise NPE when unmarshal a map 
+				xstream.allowTypesByWildcard(new String[] { "**" });
+
+				// register NullConverter as highest; otherwise NPE when unmarshal a map
 				// containing an entry with value set to null.
 				xstream.registerConverter(new NullConverter(), XStream.PRIORITY_VERY_HIGH);
 				xstream.registerConverter(new StringConverter(), XStream.PRIORITY_VERY_HIGH);
@@ -897,16 +903,16 @@ public class CoreModule extends AbstractPluginModule {
 				xstream.registerConverter(new MapConverter(xstream.getMapper()), XStream.PRIORITY_VERY_HIGH);
 				xstream.registerConverter(new ObjectMapperConverter(), XStream.PRIORITY_VERY_HIGH);
 				xstream.registerConverter(new ISO8601DateConverter(), XStream.PRIORITY_VERY_HIGH);
-				xstream.registerConverter(new ISO8601SqlTimestampConverter(), XStream.PRIORITY_VERY_HIGH); 
-				xstream.registerConverter(new ReflectionConverter(xstream.getMapper(), xstream.getReflectionProvider()), 
+				xstream.registerConverter(new ISO8601SqlTimestampConverter(), XStream.PRIORITY_VERY_HIGH);
+				xstream.registerConverter(new ReflectionConverter(xstream.getMapper(), xstream.getReflectionProvider()),
 						XStream.PRIORITY_VERY_LOW);
 				xstream.autodetectAnnotations(true);
 				return xstream;
 			}
-			
+
 		}).in(Singleton.class);
 	}
-	
+
 	@Override
 	protected Class<? extends AbstractPlugin> getPluginClass() {
 		if (Bootstrap.command != null) {
@@ -930,7 +936,7 @@ public class CoreModule extends AbstractPluginModule {
 				throw new RuntimeException("Unrecognized command: " + Bootstrap.command.getName());
 		} else {
 			return OneDev.class;
-		}		
+		}
 	}
 
 }
